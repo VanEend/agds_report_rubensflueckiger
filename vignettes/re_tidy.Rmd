@@ -1,0 +1,102 @@
+---
+title: "re_tidy"
+author: "Flueckiger_Rubens"
+date: "2025-03-03"
+output: html_document
+---
+
+# Report Excersice re_tidy
+
+## Dataset
+
+The provided dataset consists of various soil sample sites (column Experiment). These soils were exposed to higher atmospheric CO2 concentration (column increased_CO2_mean) to measure the effect of carbon dioxide storage into the soil for higher CO2 concentration in the air. To account for the time-effect, different sample sites have a different length of soil exposure (column time_years). To compare the result, a reference soil CO2 concentration was analysed (column ambient_CO2_mean).
+
+According to the paper, increasing the atmospheric CO2 concentration leads to a stimulated plant growth, which in return leads to an increased soil carbon input. Important to note here is that CO2 gets converted into glucose during photosynthesis processes. During the lifespan of the plant and when the plant dies, some of the stored Carbon in the glucose gets injected back to the atmosphere due to respiration of the plant and microorganisms during the decomposition processes. But since not all Carbon gets re-injected to the atmosphere, a net positive C-storage gain in the soil. Since the plant growth gets enhanced with increased atmospheric CO2, I hypothesise that an increase in atmospheric CO2 leads to an increase in Carbon storage in the soil and therefore a decrease in soil-CO2 concentration compared to a reference soil.
+
+## Pre-cleaning the Excel spread-sheet
+
+To use properly use the provided data, following steps were preformed on the Excel-spreadsheet:
+
+1)  Empty rows on the spreadsheet were deleted
+2)  Experiment names in the first column were completed if missing
+3)  Sample month and sample year were put in separate columns
+4)  Gaps between two words in the title row were replaced by a underscore (\_)
+5)  Not existing values (empty cells) were replaced by a hyphen (-)
+
+Then the dataset was converted into a CSV-format and put into the *data* directory. This version of the dataset will be used in this report.
+
+## Import necessary packages
+
+In this step necessary packages for this analysis are imported.
+
+*Note:*
+
+For my version of R the package *bit64* seams to be crucial. On another version of R, this might not be the case. However, since for this work the package was used, it is in the report.
+
+```{r}
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(readr)
+library(stringr)
+library(purrr)
+library(bit64)
+```
+
+## Import the file
+
+```{r}
+soil_co2_dataset <- read_csv2("../data/data_re_tidy.csv")
+```
+
+## Select necessary data
+
+To reduce the complexity of the aggregation, in this step only the necessary columns are selected. For this report the columns, *Time_years*, *ambient_CO2_mean* and *increased_CO2_mean* have to be used.
+
+```{r}
+soil_co2 <- select(soil_co2_dataset,"Time_years","ambient_CO2_mean","increased_CO2_mean")
+```
+
+## Calculating log-response-ratio
+
+With the help of the mutate() function a new column in the new dataset is created. The new column contains the log_response_ratio, which can be calculated with the formula given.
+
+```{r}
+soil_co2 <- mutate(soil_co2, log_response_ratio = log(soil_co2$increased_CO2_mean/soil_co2$ambient_CO2_mean))
+```
+
+## Aggregating data across different years
+
+In this step the dataset is aggregated into three phases:
+
+1)  Early phase, with Time_years lower than 3 years
+2)  Mid phase, with Time_years between 3 and 6 years
+3)  Late phase, with Time_years higher than 6 years
+
+To enhance the visuality of the table, first I created a new column containing the phases accordingly.
+
+```{r}
+#Creating a grouping variable in a new column according to the phases given above
+soil_co2 <- soil_co2 %>% mutate(Phase = ifelse(Time_years < 3,"Early_Phase",
+                                               ifelse(Time_years > 6,"Late_Phase","Mid_Phase")))
+
+soil_co2_aggregated <- soil_co2 %>% group_by(Phase) %>%    #Group by the newly created phase value
+  summarise(
+  ambient_CO2_mean = mean(ambient_CO2_mean,na.rm = T),         #Calculating mean value of ambient CO2
+  increased_CO2_mean = mean(increased_CO2_mean,na.rm = T),     #Calculating mean value of increased CO2
+  log_response_ratio = mean(log_response_ratio,na.rm = T),     #Calculating mean value of log-rr
+)
+
+knitr::kable(soil_co2_aggregated)
+```
+## Final interpretation
+
+To check whether my initial hypothesis was correct or not, one has to understand the meaning of the log-response ratio.
+
+First we take a closer look to the fraction inside the logarithm. If the concentration of CO2 of the exposed soil (elevated) exactly matches the concentration of the reference soil (ambient) the ratio equals 1. If the fraction is higher than 1, the exposed soil has a higher CO2 concentration than the reference soil and similarly if the fraction is lower than 1 the exposed soil has a lower CO2 concentration than the reference soil.
+
+The logarithm of this fraction just scales the values. The list below summarizes the relations: - RR \> 0: elevated \> ambient - RR = 0: elevated = ambient - RR \< 0: elevated \< ambient
+
+We now go back to the list above. One can see that the values (except for the mid phase) are all negative, which supports my hypothesis that the increase of CO2 leads to an increase of Carbon in the soil and therefore a decrease in CO2 in the soil. Similarly the coefficient seams to increase in time which further supports my initial hypothesis. The positive value for the mid phase experiment may root from the properties of averaging over a sample span. There might be high values in some sample sites but overall the trend could be visible. This however cannot be seen if only a mean value is analysed.
+
+Finally it is important to note that all values are very close to 0. Since the logarithm has been taken of the ratio between exposed and reference material, this especially has to be denoted. The logarithm usually is taken to scale outliers such that changes in smaller values are better visible for instant. Since all values are very close to 0, further proof of significance might be advisable.

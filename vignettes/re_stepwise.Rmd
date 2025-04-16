@@ -1,0 +1,218 @@
+---
+title: "re_stepwise"
+author: "Flueckiger_Rubens"
+date: "2025-04-06"
+output: html_document
+---
+
+## Loading packages
+
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+
+## Loading the dataset
+
+Loading process
+
+```{r}
+half_hourly_fluxes <- read.table("../data/half_hourly_ecosystem_fluxes.csv", sep = ";", header = T)
+```
+
+Cleaning process including
+- deleting all NA values
+- deleting all non-numeric values
+
+```{r}
+data <- half_hourly_fluxes %>%
+  select(-starts_with("TIMESTAMP")) %>% #Delete row with date
+  select(-starts_with("siteid")) %>% #Delete row with site information
+  tidyr::drop_na() #Drop all values with NA
+```
+
+## Information about the dataset
+
+The dataset contains following variables:
+
+- TA_F:        Air temperature
+- SW_IN_F:     Shortwave radiation, incoming
+- LW_IN_F:     Longwave radiation, incoming
+- VPD_F:       Vapor Pressure Deficit
+- PA_F:        Atmospheric pressure consolidated from PA and PA_ERA
+- WS_F:        Wind speed, consolidated from WS and WS_ERA
+- TA_F_MDS:    Air temperature, gap filled using MDS method
+- SW_IN_F_MDS: Shortwave radiation, incoming, gap filled using MDS (negative values set to zero, e.g., negative                values from instrumentation noise)
+- VPD_F_MDS:   Vapor Pressure Deficit, gap filled using MDS
+- CO2_F_MDS:   CO2 mole fraction, gap filled with MDS
+- PPFD_IN:	   Photosynthetic photon flux density, incoming
+- GPP_NT_VUT_REF: Gross Primary Production, from Nighttime partitioning method, reference selected from GPP                       versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+- USTAR:       Friction velocity
+
+## Performing forward selection
+
+## Step 1: linear regression with just 1 dependent variable
+
+In this step the code loops over all parameters to check for the best fitted linear model. Note that in a first step within the loop we need to check if the model tries to fit the modelling parameter with itself. Obviously this is not wanted and since modelling a parameter with itself is a perfect fit, it will break the code. Therefore we only calculate the model when the column of the dataset not matches the column of the modelling variable.
+
+Then a model with the i-th variable gets created. After extracting the R^2 value the program checks if the extracted value (*r_2*) is bigger than the previous R^2 value (*validation*; default = 0 meaning no correlation between variable and GPP). If the statement is true, *validation* is overwritten with r_2 and the current column i is stored inside the column index storeing vector *col*.
+
+In a third step a plot with the current (i-th) column and the GPP variable gets created containing additionally the regression line and the R^2 value (rounded to 5 decimals) inside the title.
+
+After the loop the AIC of the highest performing variable gets created.
+
+```{r}
+#Defining variables
+validation <- 0 #Reference value for R^2 value 
+col_names <- names(data) #Names of all columns
+col <- c() #Creating vector to store column index
+
+#Loop over all columns of the dataset
+for(i in 1:length(col_names)){
+  if(i != 14){ #Is column = modelling parameter column? If not continue
+    
+    #Modelling parameter
+    pred_col <- paste("GPP_NT_VUT_REF ~ ", paste(col_names[i])) #Select column
+    pred_col <- formula(pred_col) #Convert to a lm usable format
+    linmod <- lm(pred_col, data = data) #Modelling
+    r_2 <- summary(linmod)$r.squared #R^2 value
+    
+    #Check if R_2 is bigger or not compared to the previous value
+    if(r_2 > validation){
+      
+      #If true, store value of R^2 and column index of variable
+      validation <- r_2
+      col[1] <- i
+    }
+    
+    #Rounding the R^2 value
+    r2 <- round(r_2, digits = 5)
+    
+    #Plot
+    print(data %>%
+      ggplot(aes(x = data[, i], y = GPP_NT_VUT_REF)) + #Points
+      geom_point(alpha = 0.2) + #Characteristics of the points
+      geom_smooth(formula = y ~ x, method = "lm", color = "red", fullrange = T,
+        aes(x = data[, i], y = GPP_NT_VUT_REF #Regression line + characteristics
+      )) +
+      labs(x = col_names[i]) + #x-axis label
+      ggtitle(paste0("GGP_NT_VUT vs. ",col_names[i],"; R^2 = ",r2)) + #Title & R^2 value
+      theme_classic())
+  }
+}
+
+#Calculating AIC of the highest R^2 value
+sse <- sum((data[, col] - mean(data[, col]))^2)
+n <- length(data[,1])
+
+aic_val <- n * log(sse/n) + 6
+```
+
+As a first approximation, the GPP (the rate at which solar energy is captured in sugar molecules during photosynthetic process) is only dependent on the photon flux density (*PPFD_IN*) inside the leaf. This should be obvious for a non-radiation energy limited system since for such a system the production rate is limited by the production rate of the plant itself which in return is limited by the formation rate of sugar which is dependent on the photon flux. Therefore, as a first approximation, wind spee, air temperature, vapor density and atmospheric pressure can be neglected.
+
+## Step 2: adding another variable to previous calculated variable
+
+To continue the forward selection process another loop gets created. This loop will terminate as soon as a terminating value *term* no longer matches a predefined value (here: 1). This is done such that the program can terminate as soon as a threshold is achieved (here: Adding a variable does not add a significant benefit to the model anymore. Or: AIC is higher than the previous AIC).
+
+Inside this loop, the step above gets repeated. Additionally the program has to check whether the j-th column already has been used to model the GPP. If the statement is false, the program can continue. Since plotting the result has more than two dimensions and cannot be performed, it is neglected in the process below
+*Note:* In contrast to step 1, the best performing variable gets stored in an other variable first. This is done such that the goodness of the additional variable can be checked (by calculating the AIC). If the AIC is lower than the previous one, the column can be appended to the *col* vector and the program continues to add a new variable to the model. If not, the column does not add the column to *col* and the program gets terminated.
+
+```{r}
+
+#Defining looping variables
+term <- 1 #Terminating variable
+col <- c(col) #convert column index variable to vector
+
+#Loop as long as term does not equal 1
+while(term == 1){
+  val <- 0 #Reference value for R^2 value
+  
+  #Search for  best fitting modelling variable of remaining dataset
+  #Loop over all columns of the dataset
+  for(j in 1:length(col_names)){
+    #Is column = modelling parameter column? If not continue
+    if(j != 14){
+      
+      #Check if column j already was used for the modelling. If not continue
+      if(j %in% col == FALSE){
+        
+        #Precreate a string containing all model parameters
+        pred_var <- paste("GPP_NT_VUT_REF ~ ", paste(col_names[i]), " + ", paste(col_names[col], collapse = " + "))
+        pred_var <- formula(pred_var) #convert the string into a lm-readable format
+        
+        #Modelling
+        model <- lm(pred_var, data = data)
+        r_square <- summary(model)$r.squared #Extract R^2 value
+        
+        #Check if R_2 is bigger or not compared to the previous value
+        if(r_square > val){
+          #If true, store R^2 value and column of this variable inside the vector
+          val <- r_square
+          predictor <- j #Count makes sure to overwrite the exact element of the vector
+        }        
+      }
+    }
+  }
+  #Search for  best fitting modelling variable of remaining dataset finished
+  
+  #AIC calculation
+  #Definitions
+  pot_col <- c(col, predictor) #Potential columns for GPP prediction
+  sse_vec <- c() #vector for sum of squared error
+  subset <- data[, pot_col] #subset of all (potential) GPP modelling parameters
+
+  #loop over all columns in subset
+  for(k in 1:length(names(subset))){
+    #Storing the SSE of each column inside the defined vector (each row = one value)
+    sse_vec[k] <- sum((subset[, k] - mean(subset[, k]))^2)
+  }
+  
+  #AIC variables
+  sse_2 <- sum(sse_vec) #SSE; Sum all SSE values of each column
+  m <- length(data[, 1]) * length(pot_col) #Number of variables (#Variables in one columns * #Columns)
+  
+  #Calculating AIC
+  aic_value <- m * log(sse_2 / m) + 2 * (length(pot_col) + 2) #AIC
+  
+  #Check if AIC is smaller than previous value. If true continue
+  if(aic_val < aic_value){
+    term <- 0 #Terminate process
+  }
+  else{
+    col <- c(col, predictor) #If not add best fit predictor to column counting variable
+  }
+}
+```
+
+## Final results
+
+Following parameters in descending order of importance (first has the highest explanation of the GPP variable) are relevant for modeling the GPP:
+
+```{r}
+print(col_names[col])
+```
+To visualize and verify the result, a regression model and a principal component analysis (PCA) is performed.
+
+```{r}
+
+#Regression model of the relevant variables
+r_value <- round(validation, 5) #R^2 value rounded to 5 decimals
+
+ggplot(data = data, aes(x = PPFD_IN, y = GPP_NT_VUT_REF)) + #Points
+  geom_point(alpha = 0.2) + #Characteristics of the points
+  geom_smooth(formula = y ~ x, method = "lm", color = "red", fullrange = T,
+    aes(x = data$PPFD_IN, y = data$GPP_NT_VUT_REF #Regression line + characteristics
+  )) +
+  ggtitle(paste0("GGP_NT_VUT vs. PPDF_IN; R^2 = ", r_value)) + #Title & R^2 value
+  theme_classic()
+
+#Principal component analysis (PCA)
+fit <- princomp(data, cor = T)
+plot(fit, type = "l", main = "Screeplot of PCA") #Screeplot
+```
+By identifying the kink at the screeplot, one can see how many relevant components there are inside the dataset. In this case one can see that there are two principal components. Since the modeling parameter GPP is one component, it only needs one other component to (mainly) model the parameter.
+
+According to the model, the GPP (Gross primary production) mainly dependent on the incoming photosynthetic photon flux density (PPDF). Since the GPP is the rate at which solar energy is captured in sugar molecules during photosynthetic process and therefore only dependent on processes inside the leaf it should be obvious that the GPP is not dependent on air temperature (*TA_F*), atmospheric pressure (*PA_F*), vapor pressure (*VPD_F*), wind speed (*WS_F*) and friction velocity (*USTAR*) as well as the gap filled version of each variable.
+
+The neglection of the incoming long- and shortwave radiation might occur due to limitation of photon flux inside the leaf rather than due to radiation from the sun. This means that over the whole observed interval there was always enough radiation abundant to benefit sugar production inside the plant and the sugar production rate was only limited by the production rate of the plant itself. The same argument can be used for the CO2 mole fraction (*CO2_F_MDS*).
