@@ -2,31 +2,16 @@
 title: "re_airquality"
 author: "Flueckiger_Rubens"
 date: "2025-03-10"
-output: html_document
+output: 
+  html_document:
+  toc: true
 ---
 
 # Report Excersice re_airquality
 
-## Dataset and Analysis
+## Load packages
 
-The built-in dataset *airquality* has daily air quality measurements from New York between 1.5.1973 and 30.8.1973. The dataset contains:
-
--   Ozone [ppb]
--   Solar radiation [J/cm\^2] at frequency band between 4'000 and 7'700 Angstroms
--   Average windspeed [mph]
--   Maximum daily temperature [°F]
-
-With the provided data, the effect of ozone production at near surface level is analysed. Ozone at near surface levels is created followingly:
-
--   NO2 + O2 \<=\> NO + O3
-
-Both reactions take place simultaneously. To enrich the concentration, emitted volatile organic compounds (VOC) can bond with NO and thus limiting the backward reaction.
-
-I hypothesize that a higher wind speed, which should enhance mixing, and solar radiation leads to a higher ozone concentration.
-
-## Import packages
-
-```{r}
+```{r, message=FALSE, error=FALSE, warning=FALSE}
 library(tidyr)
 library(ggplot2)
 library(readr)
@@ -34,11 +19,30 @@ library(lubridate)
 library(dplyr)
 ```
 
-## Monthly fluxes
+## Dataset Information
+
+The built-in dataset *airquality* has daily air quality measurements from New York between 1.5.1973 and 30.8.1973. The dataset contains:
+
+-   Ozone [ppb]
+-   Solar radiation [J/cm^2^] at frequency band between 4'000 and 7'700 Angstroms
+-   Average windspeed [mph]
+-   Maximum daily temperature [°F]
+
+With the provided data, the effect of ozone production at near surface level is analysed. Ozone at near surface levels is created followingly:
+
+-   NO~2~ + O~2~ \<=\> NO + O~3~
+
+Both reactions take place simultaneously. To enrich the concentration, emitted volatile organic compounds (VOC) can bond with NO and thus limiting the backward reaction.
+
+I hypothesize that a higher wind speed, which should enhance mixing, and solar radiation leads to a higher ozone concentration.
+
+## Analysis
+
+### Monthly fluxes
 
 First monthly fluxes are analysed by aggregating daily values over the month.
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 #Deleting each row with NA values and storing it into as separate variable 
 oz <- airquality %>% drop_na()
 
@@ -94,7 +98,13 @@ knitr::kable(oz_stats)
 
 Now four plots containing the range and mean value of the observed variables are created.
 
-```{r}
+```{r, echo=FALSE, results="hide"}
+#Expression solar radiation
+sol_rad <- substitute("Solar radiation [J/"*cm^2*"]") 
+    as.character(as.expression(sol_rad))
+```
+
+```{r, echo=FALSE, message=FALSE, }
 #Monthly mean, max and min ozone values
 p1 <- ggplot(data = oz_mean,aes(x = Month,y = Ozone)) + geom_line() + #Average line
   geom_line(data = oz_min, aes(x = Month, y = Ozone),col = "navy") + #Minimum line
@@ -134,7 +144,7 @@ p4 <- ggplot(data = oz_mean,aes(x = Month,y = Solar.R)) + geom_line() + #Average
   geom_line(data = oz_max, aes(x = Month, y = Solar.R),col = "darkorange") + #Maximum line
   geom_ribbon(aes(x = Month, ymin = oz_min$Solar.R, ymax = oz_max$Solar.R),fill = "gold",alpha = 0.3) + #Filling 
   labs(title = "Monthly solar radiation variation & range") + #Title
-  labs(y = "Solar radiation [J/cm^2]") + #y-axis label
+  labs(y = sol_rad) + #y-axis label
   theme_bw() +
   theme(legend.position = "none") + #Hide legend
   theme(plot.title = element_text(hjust = 0.5)) #Center title
@@ -146,7 +156,7 @@ Already one can see for the months July and August, temperature, solar radiation
 
 In a next step we take a closer look at inner monthly variations with the help of violin plots.
 
-```{r}
+```{r, echo=FALSE}
 #Violin plot ozone
 v1 <- ggplot(oz, aes(factor(Month), Ozone, fill = Month)) + 
   geom_violin() + #Generate violin plot
@@ -186,7 +196,7 @@ v4 <- ggplot(oz, aes(factor(Month), Solar.R, fill = Month)) +
   scale_fill_viridis_c() + #Color palette
   theme_bw() +
   theme(legend.position = "none") + #Hide legend
-  labs(x = "Solar radiation [J/cm^2]") + #x-axis label
+  labs(x = sol_rad) + #x-axis label
   labs(title = "Monthly solar radiation distribution") + #Title
   labs(y = "Month") + #y-axis label
   theme(plot.title = element_text(hjust = 0.5)) #Center title
@@ -196,47 +206,49 @@ cowplot::plot_grid(v1,v2,v3,v4)
 
 One can see that the distributions for low wind speed and ozone, as well as solar radiation and temperature are very similar, which can be explained as solar radiation is the source of temperature.
 
-## Scatterplot: ozone vs. solar radiation and wind speed.
+### Scatterplot
+
+**Ozone vs. solar radiation and wind speed**
 
 Since wind speed seems to have a strong effect for low velocities, we first plot solar radiation against ozone concentration. Then a trend line including the regression coefficient is calculated.
 
-```{r}
+```{r, echo=FALSE, results="hide"}
 #linear ozone-solar radiation model
 lm_os <- lm(Ozone ~ Solar.R,oz)               #Creating linear model
-a <- round(coefficients(lm_os)[1],digits = 3) #Intercept
-b <- round(coefficients(lm_os)[2],digits = 3) #Slope
-r2 <- round(0.1133,digits = 3)                #R^2 value
 
-#To get the r^2 value use summary (below)
-summary(lm_os)
+#Expression Linear function & R^2 value
+eq <- substitute(y == a + b*x*";"~~R^2~"="~r2,
+                 list(a = format(unname(coef(lm_os)[1]), digits = 2),
+                      b = format(unname(coef(lm_os)[2]), digits = 2),
+                      r2 = format(summary(lm_os)$r.squared, digits = 3)))
+as.character(as.expression(eq))
+```
 
-#Convert values to a single string
-eq1 <- paste("y =",a,"+",b,"x, r^2 =",r2)
-
+```{r, echo=FALSE, message=FALSE}
 #Plot regression
 ggplot(data = oz,aes(x = Solar.R, y = Ozone)) + geom_point(shape = 20, size = 3) +
   geom_smooth(method = "lm",col = "red",se = F) + #Regression line
-  geom_text(x = 70, y = 155, label = eq1) +  #Regression line function & r^2 value
   theme_bw() +
   labs(y = "Ozone [ppb]") + #x-axis label
-  labs(x = "Solar radiation [J/cm^2]") + #y-axis label
+  labs(subtitle = eq) + #Subtitle with R^2
+  labs(x = sol_rad) + #y-axis label
   labs(title = "Solar radiation & Ozone") + #Title
   theme(plot.title = element_text(hjust = 0.5)) #Center title
 ```
 
 One can see that the regression coefficient has a low value of 0.113 which means that solar radiation only explains about 10% of the ozone concentration effect. By plotting the wind speed in colours, we can account for this effect as well.
 
-```{r}
+```{r, echo=FALSE, message=FALSE}
 #Plot regression & wind
 ggplot(data = oz,aes(x = Solar.R, y = Ozone, colour = Wind)) +
   geom_point(shape = 20, size = 3) +
   geom_smooth(method = "lm",col = "red",se = F) + #Regression line
   scale_color_viridis_c() +
-  geom_text(x = 80, y = 155, label = eq1, color = "black") +  #Regression line function & r^2 value
   theme_bw() +
   labs(y = "Ozone [ppb]") + #x-axis label
-  labs(x = "Solar radiation [J/cm^2]") + #y-axis label
+  labs(x = sol_rad) + #y-axis label
   labs(title = "Solar radiation & Ozone & Wind") + #Title
+  labs(subtitle = eq) + #Subtitle with R^2
   labs(colour = "Windspeed\n[mph]") + #Note: \n creates a new row
   theme(plot.title = element_text(hjust = 0.5)) #Center title
 ```
@@ -246,3 +258,4 @@ According to this new plot, we can now see that especially low wind speeds accou
 ## Conclusion
 
 According to the analysis done above, my hypothesis is correct regarding higher solar radiation leading to higher ozone concentrations. In contrast to my hypothesis, lower wind speed seams to produce more ozone, which may root from reaction velocity. For higher wind speeds, the reaction of VOC’s with NO may be too low to limit the NO concentration and therefore limiting the enrichment of ozone.
+
