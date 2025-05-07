@@ -1,0 +1,225 @@
+---
+title: "re_ml_01"
+author: "Flueckiger_Rubens"
+date: "2025-04-27"
+output: 
+  html_document:
+  toc: true
+---
+
+# Report exercise maschine learning I
+
+## Load packeges, dataset and function
+
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+library(caret)
+library(ggplot2)
+library(tidyr)
+```
+
+```{r, echo=FALSE, message=FALSE}
+#Dataset
+daily_fluxes <- readr::read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv") %>%
+
+  # select only the variables we are interested in
+  dplyr::select(TIMESTAMP,
+                GPP_NT_VUT_REF,    # the target
+                ends_with("_QC"),  # quality control info
+                ends_with("_F"),   # includes all all meteorological covariates
+                -contains("JSB")   # weird useless variable
+                ) |>
+
+  # convert to a nice date object
+  dplyr::mutate(TIMESTAMP = lubridate::ymd(TIMESTAMP)) |>
+
+  # set all -9999 to NA
+  mutate(across(where(is.numeric), ~na_if(., -9999))) |> 
+  
+  # retain only data based on >=80% good-quality measurements
+  # overwrite bad data with NA (not dropping rows)
+  dplyr::mutate(GPP_NT_VUT_REF = ifelse(NEE_VUT_REF_QC < 0.8, NA, GPP_NT_VUT_REF),
+                TA_F           = ifelse(TA_F_QC        < 0.8, NA, TA_F),
+                SW_IN_F        = ifelse(SW_IN_F_QC     < 0.8, NA, SW_IN_F),
+                LW_IN_F        = ifelse(LW_IN_F_QC     < 0.8, NA, LW_IN_F),
+                VPD_F          = ifelse(VPD_F_QC       < 0.8, NA, VPD_F),
+                PA_F           = ifelse(PA_F_QC        < 0.8, NA, PA_F),
+                P_F            = ifelse(P_F_QC         < 0.8, NA, P_F),
+                WS_F           = ifelse(WS_F_QC        < 0.8, NA, WS_F)) |> 
+
+  # drop QC variables (no longer needed)
+  dplyr::select(-ends_with("_QC"))
+```
+
+```{r, echo=FALSE}
+#Function
+source("../functions/Model_eval_function.R")
+```
+
+## Preprocessing
+
+```{r, echo=FALSE, warning=FALSE}
+
+# Data splitting
+set.seed(1982)  # for reproducibility
+split <- rsample::initial_split(daily_fluxes, prop = 0.7, strata = "VPD_F")
+daily_fluxes_train <- rsample::training(split)
+daily_fluxes_test <- rsample::testing(split)
+
+# Model and pre-processing formulation, use all variables but LW_IN_F
+pp <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F, 
+                      data = daily_fluxes_train |> drop_na()) |> 
+  recipes::step_BoxCox(recipes::all_predictors()) |> 
+  recipes::step_center(recipes::all_numeric(), -recipes::all_outcomes()) |>
+  recipes::step_scale(recipes::all_numeric(), -recipes::all_outcomes())
+
+# Fit linear regression model
+mod_lm <- caret::train(
+  pp, 
+  data = daily_fluxes_train |> drop_na(), 
+  method = "lm",
+  trControl = caret::trainControl(method = "none"),
+  metric = "RMSE"
+)
+
+# Fit KNN model
+mod_knn <- caret::train(
+  pp, 
+  data = daily_fluxes_train |> drop_na(), 
+  method = "knn",
+  trControl = caret::trainControl(method = "none"),
+  tuneGrid = data.frame(k = 8),
+  metric = "RMSE"
+)
+
+```
+
+## Comparison of the linear regression and KNN models
+
+### Linear regression
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+eval_model(mod = mod_lm, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+```
+
+### KNN model evaluation
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+eval_model(mod = mod_knn, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+```
+
+### Interpretation
+
+**Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model?**
+
+This has to do with the amount of data considered to model a variable. Normally, the more data points available to model a variable the less sensitive the model is to extreme values. Since in the KNN model we only took eight data points to model the GPP, it is way more sensitive to the data inside the dataset than the linear model, which considered every point in the dataset to model the GPP.
+
+**Why does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?**
+
+Since in the KNN model we only consider a point cloud with the minimal distance between every point inside this point cloud, in the original dataset, which was used to model the target value with the linear model, there must exist at least one point outside to point cloud which scatters the point cloud of the linear model more than the point cloud of the KNN model. This means that the KNN model must perform equal or better than the linear model.
+
+**How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?**
+
+Since in the KNN model only the nearest points are considered, it tends to underfit the problem. On the other hand a linear regression model tends to overfit the problem (if the "actual" model is linear) since a model over every data point inside the dataset is considered to model a variable.
+
+### Temporal variations
+
+```{r, echo=FALSE}
+
+daily_fluxes_plot <- drop_na(daily_fluxes) #Create new dataset
+daily_fluxes_plot$GPP_knn <- predict(mod_knn, newdata = daily_fluxes_plot) #Add prediction of GPP by KNN to dataset
+daily_fluxes_plot$GPP_lm <- predict(mod_lm, newdata = daily_fluxes_plot) #Add prediction of GPP by lm to dataset
+
+color_code <- c("Observation" = "darkgreen", "KNN predicted" = "blue", "lm predicted" = "red") #Colors for legend
+
+ggplot(data = daily_fluxes_plot, aes(x = TIMESTAMP)) + #X-Axis (Timeline)
+  geom_point(aes(y = GPP_NT_VUT_REF, color = "Observation"), alpha = 0.3) + #Observation points
+  geom_point(aes(y = GPP_knn, color = "KNN predicted"), alpha = 0.3) + #KNN-predicted values
+  geom_point(aes(y = GPP_lm, color = "lm predicted"), alpha = 0.3) + #Linear model predicted values
+  scale_color_manual(values = color_code) + #Legend
+  labs(x = "Dates",
+       y = "GPP",
+       title = "Observed and modelled GPP") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5)) #Center title
+
+```
+
+## The role of k
+
+If the k value approaches 1, only one datapoint is considered. This means that the model is less confined. The model has a low complexity but a large error, which leads to an underfitment. In contrast, if the k value approaches n, every datapoint is considered. This means that the model is very confined. The model has a high complexity as well as a high error, which leads to an overfitment. erfitment.
+
+### Testing the hypothesis
+
+The function general_test takes a trainingset, a testset and a k value for the KNN-regression as an input and outputs the MAE value of its created test set. Since a training and a testset was already formed in a previous step of this markdown, I will reuse those sets
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+general_test <- function(k_value, df_train, df_test){
+  
+  # Fit KNN model
+  model <- caret::train(
+    pp, 
+    data = df_train |> drop_na(), 
+    method = "knn",
+    trControl = caret::trainControl(method = "none"),
+    tuneGrid = data.frame(k = k_value),
+    metric = "RMSE"
+  )
+  
+  #Drop NA-values
+  general_test <- daily_fluxes_test %>%
+    drop_na()
+  
+  #Predict values of model 
+  general_test$GPP_fitted <- predict(model, newdata = general_test)
+  
+  #Determine MAE
+  mae_val <- mean(abs(general_test$GPP_fitted - general_test$GPP_NT_VUT_REF))
+  
+  return(mae_val)
+}
+
+```
+
+### Ploted results
+
+*Note:* to reduce the runtime, only k values from 1 to 200 are considered. One will see that from a k value of about 100, the curve of the plot will converge to a linear curve. The minimum will be before this converge.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+#Create data frame to store k & MAE values
+k <- c(1:200)
+k_vs_mae <- data.frame(k)
+
+for(i in 1:200){
+  
+  #Determine MAE of k = i and store it in data frame
+  k_vs_mae[i, "MAE"] <- general_test(k_value = i, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+  
+}
+
+ggplot(data = k_vs_mae, aes(x = k, y = MAE)) +
+  geom_point(size = 2) +
+  labs(x = "Complexity (k)",
+       y = "Generalisability (MAE)",
+       title = "Generalisability as a function of Complexity"
+  ) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5)) #Center title
+
+```
+
+As one can see in the plot, a low k value, which means a low complexity, has a high error. The same is true for a high k value.
+
+### Optimal k
+
+To find the optimal k one only has to extract the minimum MAE value of the dataset created above
+
+```{r, echo=FALSE}
+#Identifying the optimum
+ind <- match(min(k_vs_mae$MAE), k_vs_mae$MAE)
+
+#Result
+paste0("The optimal k is: ", k_vs_mae[ind, "k"])
+```
