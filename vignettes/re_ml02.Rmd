@@ -2,7 +2,9 @@
 title: "re_ml02"
 author: "Flueckiger_Rubens"
 date: "2025-05-05"
-output: html_document
+output: 
+  html_document:
+  toc: true
 ---
 
 # Report re_ml02
@@ -25,7 +27,9 @@ laegern <- read.table("../data/FLX_CH-Lae.csv", sep = ",", header = T)
 
 ### Load function
 
-The function optimal_k_eval takes a training set and a test set as input. With the training set the function creates a KNN-model, searches for a ideal k-value and models the GPP value with this ideal k value. Afterwards the $R^2$ value and the RMSE value are calculated with the test set and returned. First value = $R^2$, second value = RMSE value.
+The function optimal_k_eval takes a training set and a test set as input. With the training set the function creates a KNN-model, searches for a ideal k-value and models the GPP value with this ideal k value. Afterwards the $R^2$ value and the RMSE value are calculated with the test set and returned. Returned values: 
+- First value: RMSE
+- Second value: $R^2$
 
 ```{r, echo=FALSE}
 source("../functions/optimal_k_eval.R")
@@ -33,16 +37,7 @@ source("../functions/optimal_k_eval.R")
 
 ## Preprocess Datasets
 
-In this step every error value gets dropped and following variables are selected:
-- TIMESTAMP
-- GPP_NT_VUT_REF
-- TA_F
-- SW_IN_F
-- LW_IN_F
-- VPD_F
-- PA_F
-- P_F
-- WS_F
+In this step every error value gets dropped and following variables are selected: - TIMESTAMP - GPP_NT_VUT_REF - TA_F - SW_IN_F - LW_IN_F - VPD_F - PA_F - P_F - WS_F
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -141,24 +136,23 @@ tot_v_lae <- optimal_k_eval(df_train = total_train, df_test = laegern_test)
 tot_v_tot <- optimal_k_eval(df_train = total_train, df_test = total_test)
 ```
 
-| Model trained on data from Davos            | $R^2$ | RMSE  |
-|:--------------------------------------------|:-----:|:-----:|
-| Evaluation against Davos test set           | 0.710 | 1.483 |
-| Evaluation against Laegern test set         | 0.546 | 3.127 |
-| Evaluation against Davos & Laegern test set | 0.610 | 2.170 |
+| Model trained on data from Davos            |           $R^2$            |            RMSE            |
+|:------------------------------------------|:-------------:|:-------------:|
+| Evaluation against Davos test set           | `r round(dav_v_dav[2], 3)` | `r round(dav_v_dav[1], 3)` |
+| Evaluation against Laegern test set         | `r round(dav_v_lae[2], 3)` | `r round(dav_v_lae[1], 3)` |
+| Evaluation against Davos & Laegern test set | `r round(dav_v_tot[2], 3)` | `r round(dav_v_tot[1], 3)` |
 
-| Model trained on data from Laegern          | $R^2$ | RMSE  |
-|:--------------------------------------------|:-----:|:-----:|
-| Evaluation against Davos test set           | 0.511 | 2.326 |
-| Evaluation against Laegern test set         | 0.687 | 2.385 |
-| Evaluation against Davos & Laegern test set | 0.599 | 2.295 |
+| Model trained on data from Laegern          |           $R^2$            |            RMSE            |
+|:------------------------------------------|:-------------:|:-------------:|
+| Evaluation against Davos test set           | `r round(lae_v_dav[2], 3)` | `r round(lae_v_dav[1], 3)` |
+| Evaluation against Laegern test set         | `r round(lae_v_lae[2], 3)` | `r round(lae_v_lae[1], 3)` |
+| Evaluation against Davos & Laegern test set | `r round(lae_v_tot[2], 3)` | `r round(lae_v_tot[1], 3)` |
 
-| Model trained on data from Davos & Laegern  | $R^2$ | RMSE  |
-|:--------------------------------------------|:-----:|:-----:|
-| Evaluation against Davos test set           | 0.684 | 1.596 |
-| Evaluation against Laegern test set         | 0.663 | 2.486 |
-| Evaluation against Davos & Laegern test set | 0.666 | 1.963 |
-
+| Model trained on data from Davos & Laegern  |           $R^2$            |            RMSE            |
+|:------------------------------------------|:-------------:|:-------------:|
+| Evaluation against Davos test set           | `r round(tot_v_dav[2], 3)` | `r round(tot_v_dav[1], 3)` |
+| Evaluation against Laegern test set         | `r round(tot_v_lae[2], 3)` | `r round(tot_v_lae[1], 3)` |
+| Evaluation against Davos & Laegern test set | `r round(tot_v_tot[2], 3)` | `r round(tot_v_tot[1], 3)` |
 
 ## Interpretation
 
@@ -172,13 +166,13 @@ Quite poor. Especially for a set trained in Davos and tested in Laegern. The dif
 
 In general the differences occur due to height differences (Davos is about 1'000m higher than Laegern) and climatic differences. As Davos is according to the table above in a Polar-Tundra zone (ET) and Laegern is in a Temperate-No_dry_season-Warm_summer zone (Cfb) difference have to occur. In addition, the duration of the sampling for Davos is longer than the sampling duration in Laegern. There might occur some kind of an anomaly during the period when Davos was sampling and Laegern was not, which can have an affect on the performance of the models.
 
-I think that the difference, especially in the contrast between Davos tested in Laegern and Laegern tested in Davos, has to do with the foliage type observed at both sites. As Davos has predominantly evergreen needle leaf trees, the model is trained with a specialization on needle leaf trees only. Therefore, the model performs poorer for a site with mixed forest conditions. A site with mixed forest conditions however contains to some extent needle leaf trees and therefore can still perform quite alright in a forest with only one type of tree. 
+I think that the difference, especially in the contrast between Davos tested in Laegern and Laegern tested in Davos, has to do with the foliage type observed at both sites. As Davos has predominantly evergreen needle leaf trees, the model is trained with a specialization on needle leaf trees only. Therefore, the model performs poorer for a site with mixed forest conditions. A site with mixed forest conditions however contains to some extent needle leaf trees and therefore can still perform quite alright in a forest with only one type of tree.
 
 **How does the model trained on both sites perform on the three test sets? Why is this the case?**
 
 The model trained on both sites does more or less identically well on all test sites.
 
-As already mentioned in the third paragraph on the second question, a model trained on a diverse site performs well both on a homogeneous forest site (like in Davos) and  a heterogeneous forest site (like in Laegern). If a data set contains data from both sites this effect is further enhanced.
+As already mentioned in the third paragraph on the second question, a model trained on a diverse site performs well both on a homogeneous forest site (like in Davos) and a heterogeneous forest site (like in Laegern). If a data set contains data from both sites this effect is further enhanced.
 
 **When training and testing on both sites, is this a true ‘out-of-sample’ setup? What would you expect if your model was tested against data from a site in Spain?**
 
