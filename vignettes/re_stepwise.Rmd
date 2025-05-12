@@ -67,7 +67,7 @@ In a third step a plot with the current (i-th) column and the GPP variable gets 
 
 After the loop the AIC of the highest performing variable gets created.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 1-14: Results by applying Step 1", fig.align='center'}
 #Defining variables
 validation <- 0 #Reference value for R^2 value 
 col_names <- names(data) #Names of all columns
@@ -203,7 +203,7 @@ print(col_names[col])
 
 To visualize and verify the result, a regression model and a principal component analysis (PCA) is performed.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 15: GPP as a function of the most relevant parameter", fig.align='center'}
 
 #Regression model of the relevant variables
 r_value <- round(validation, 5) #R^2 value rounded to 5 decimals
@@ -217,6 +217,9 @@ ggplot(data = data, aes(x = PPFD_IN, y = GPP_NT_VUT_REF)) + #Points
   ggtitle("GGP_NT_VUT vs. PPDF_IN") + #Title & R^2 value
   theme_classic() +
   theme(plot.title = element_text(hjust = 0.5)) #Center Title
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 16: Principal component analysis", fig.align='center'}
 
 #Principal component analysis (PCA)
 fit <- princomp(data, cor = T)
