@@ -4,7 +4,7 @@ author: "Flueckiger_Rubens"
 date: "2025-03-03"
 output: 
   html_document:
-  toc: true
+    toc: true
 ---
 
 # Report Excersice re_tidy
@@ -83,11 +83,11 @@ To enhance the visuality of the table, first I created a new column containing t
 soil_co2 <- soil_co2 %>% mutate(Phase = ifelse(Time_years < 3,"Early_Phase",
                                                ifelse(Time_years > 6,"Late_Phase","Mid_Phase")))
 
-soil_co2_aggregated <- soil_co2 %>% group_by(Phase) %>%    #Group by the newly created phase value
+soil_co2_aggregated <- soil_co2 %>% group_by(Phase) %>% #Group by the newly created phase value
   summarise(
-  ambient_CO2_mean = mean(ambient_CO2_mean,na.rm = T),         #Calculating mean value of ambient CO2
-  increased_CO2_mean = mean(increased_CO2_mean,na.rm = T),     #Calculating mean value of increased CO2
-  log_response_ratio = mean(log_response_ratio,na.rm = T),     #Calculating mean value of log-rr
+  ambient_CO2_mean = round(mean(ambient_CO2_mean,na.rm = T), 3), #Mean ambient CO2
+  increased_CO2_mean = round(mean(increased_CO2_mean,na.rm = T), 3), #Mean increased CO2
+  log_response_ratio = round(mean(log_response_ratio,na.rm = T), 3), #Mean log-rr
 )
 
 knitr::kable(soil_co2_aggregated)
@@ -99,7 +99,11 @@ To check whether my initial hypothesis was correct or not, one has to understand
 
 First we take a closer look to the fraction inside the logarithm. If the concentration of CO~2~ of the exposed soil (elevated) exactly matches the concentration of the reference soil (ambient) the ratio equals 1. If the fraction is higher than 1, the exposed soil has a higher CO~2~ concentration than the reference soil and similarly if the fraction is lower than 1 the exposed soil has a lower CO~2~ concentration than the reference soil.
 
-The logarithm of this fraction just scales the values. The list below summarizes the relations: - RR \> 0: elevated \> ambient - RR = 0: elevated = ambient - RR \< 0: elevated \< ambient
+The logarithm of this fraction just scales the values. The list below summarizes the relations:
+
+- $RR > 0: elevated > ambient$ 
+- $RR = 0: elevated = ambient$ 
+- $RR < 0: elevated < ambient$
 
 We now go back to the list above. One can see that the values (except for the mid phase) are all negative, which supports my hypothesis that the increase of CO~2~ leads to an increase of Carbon in the soil and therefore a decrease in CO~2~ in the soil. Similarly the coefficient seams to increase in time which further supports my initial hypothesis. The positive value for the mid phase experiment may root from the properties of averaging over a sample span. There might be high values in some sample sites but overall the trend could be visible. This however cannot be seen if only a mean value is analysed.
 
