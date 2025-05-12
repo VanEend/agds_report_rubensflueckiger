@@ -1,3 +1,4 @@
+#Function to perform a KNN-model with an optimal k value
 optimal_k_eval <- function(df_train, df_test){
   
   # The same model formulation is in the previous chapter
