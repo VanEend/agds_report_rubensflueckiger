@@ -1,4 +1,4 @@
-# make model evaluation into a function to reuse code
+# make model evaluation into a function to reduce code size
 eval_model <- function(mod, df_train, df_test){
   
   # add predictions to the data frames
