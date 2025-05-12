@@ -111,7 +111,7 @@ sol_rad <- substitute("Solar radiation [J/"*cm^2*"]")
     as.character(as.expression(sol_rad))
 ```
 
-```{r, echo=FALSE, message=FALSE, }
+```{r, echo=FALSE, message=FALSE, fig.cap="Figure 1: Monthly evolutions", fig.align='center'}
 #Monthly mean, max and min ozone values
 p1 <- ggplot(data = oz_mean,aes(x = Month,y = Ozone)) + geom_line() + #Average line
   geom_line(data = oz_min, aes(x = Month, y = Ozone),col = "navy") + #Minimum line
@@ -163,7 +163,7 @@ Already one can see for the months July and August, temperature, solar radiation
 
 In a next step we take a closer look at inner monthly variations with the help of violin plots.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.cap="Figure 2: Monthly distributions", fig.align='center'}
 #Violin plot ozone
 v1 <- ggplot(oz, aes(factor(Month), Ozone, fill = Month)) + 
   geom_violin() + #Generate violin plot
@@ -231,7 +231,7 @@ eq <- substitute(y == a + b*x*";"~~R^2~"="~r2,
 as.character(as.expression(eq))
 ```
 
-```{r, echo=FALSE, message=FALSE}
+```{r, echo=FALSE, message=FALSE, fig.cap="Figure 3: Ozone as a function of solar radiation", fig.align='center'}
 #Plot regression
 ggplot(data = oz,aes(x = Solar.R, y = Ozone)) + geom_point(shape = 20, size = 3) +
   geom_smooth(method = "lm",col = "red",se = F) + #Regression line
@@ -239,13 +239,13 @@ ggplot(data = oz,aes(x = Solar.R, y = Ozone)) + geom_point(shape = 20, size = 3)
   labs(y = "Ozone [ppb]") + #x-axis label
   labs(subtitle = eq) + #Subtitle with R^2
   labs(x = sol_rad) + #y-axis label
-  labs(title = "Solar radiation & Ozone") + #Title
+  labs(title = "Ozone as a function of solar radiation") + #Title
   theme(plot.title = element_text(hjust = 0.5)) #Center title
 ```
 
 One can see that the regression coefficient has a low value of 0.113 which means that solar radiation only explains about 10% of the ozone concentration effect. By plotting the wind speed in colours, we can account for this effect as well.
 
-```{r, echo=FALSE, message=FALSE}
+```{r, echo=FALSE, message=FALSE, fig.cap="Figure 4: Ozone as a function of solar radiation and windspeed", fig.align='center'}
 #Plot regression & wind
 ggplot(data = oz,aes(x = Solar.R, y = Ozone, colour = Wind)) +
   geom_point(shape = 20, size = 3) +
