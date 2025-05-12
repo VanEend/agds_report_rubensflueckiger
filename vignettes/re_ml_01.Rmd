@@ -98,13 +98,13 @@ mod_knn <- caret::train(
 
 ### Linear regression
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 1: Linear model evaluation", fig.align='center'}
 eval_model(mod = mod_lm, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
 ```
 
 ### KNN model evaluation
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 2: KNN model evaluation", fig.align='center'}
 eval_model(mod = mod_knn, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
 ```
 
@@ -124,7 +124,7 @@ Since in the KNN model only the nearest points are considered, it tends to under
 
 ### Temporal variations
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.cap="Figure 3: Temporal changes", fig.align='center'}
 
 daily_fluxes_plot <- drop_na(daily_fluxes) #Create new dataset
 daily_fluxes_plot$GPP_knn <- predict(mod_knn, newdata = daily_fluxes_plot) #Add prediction of GPP by KNN to dataset
@@ -186,7 +186,7 @@ general_test <- function(k_value, df_train, df_test){
 
 *Note:* to reduce the runtime, only k values from 1 to 200 are considered. One will see that from a k value of about 100, the curve of the plot will converge to a linear curve. The minimum will be before this converge.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 4: The role of k and MAE", fig.align='center'}
 
 #Create data frame to store k & MAE values
 k <- c(1:200)
