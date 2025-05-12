@@ -4,17 +4,35 @@ author: "Flueckiger_Rubens"
 date: "2025-04-06"
 output: 
   html_document:
-  toc: true
+    toc: true
 ---
 
 # Report re_stepwise
 
-## Loading packages and dataset
+## Loading packages
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(dplyr)
 library(ggplot2)
 ```
+
+Information about the dataset
+
+The dataset contains following variables:
+
+-   **TA_F**: Air temperature
+-   **SW_IN_F**: Shortwave radiation, incoming
+-   **LW_IN_F**: Longwave radiation, incoming
+-   **VPD_F**: Vapor Pressure Deficit
+-   **PA_F**: Atmospheric pressure consolidated from PA and PA_ERA
+-   **WS_F**: Wind speed, consolidated from WS and WS_ERA
+-   **TA_F_MDS**: Air temperature, gap filled using MDS method
+-   **SW_IN_F_MDS**: Shortwave radiation, incoming, gap filled using MDS (negative values set to zero, e.g., negative values from instrumentation noise)
+-   **VPD_F_MDS**: Vapor Pressure Deficit, gap filled using MDS
+-   **CO2_F_MDS**: CO2 mole fraction, gap filled with MDS
+-   **PPFD_IN**: Photosynthetic photon flux density, incoming
+-   **GPP_NT_VUT_REF**: Gross Primary Production, from Nighttime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
+-   **USTAR**: Friction velocity
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 half_hourly_fluxes <- read.table("../data/half_hourly_ecosystem_fluxes.csv", sep = ";", header = T)
@@ -34,24 +52,6 @@ data <- half_hourly_fluxes %>%
   select(-starts_with("siteid")) %>% #Delete row with site information
   tidyr::drop_na() #Drop all values with NA
 ```
-
-### Information about the dataset
-
-The dataset contains following variables:
-
--   **TA_F**: Air temperature
--   **SW_IN_F**: Shortwave radiation, incoming
--   **LW_IN_F**: Longwave radiation, incoming
--   **VPD_F**: Vapor Pressure Deficit
--   **PA_F**: Atmospheric pressure consolidated from PA and PA_ERA
--   **WS_F**: Wind speed, consolidated from WS and WS_ERA
--   **TA_F_MDS**: Air temperature, gap filled using MDS method
--   **SW_IN_F_MDS**: Shortwave radiation, incoming, gap filled using MDS (negative values set to zero, e.g., negative values from instrumentation noise)
--   **VPD_F_MDS**: Vapor Pressure Deficit, gap filled using MDS
--   **CO2_F_MDS**: CO2 mole fraction, gap filled with MDS
--   **PPFD_IN**: Photosynthetic photon flux density, incoming
--   **GPP_NT_VUT_REF**: Gross Primary Production, from Nighttime partitioning method, reference selected from GPP versions using model efficiency (MEF). The MEF analysis is repeated for each time aggregation
--   **USTAR**: Friction velocity
 
 ## Performing forward selection
 
