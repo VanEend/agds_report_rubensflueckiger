@@ -4,7 +4,7 @@ author: "Flueckiger_Rubens"
 date: "2025-03-10"
 output: 
   html_document:
-  toc: true
+    toc: true
 ---
 
 # Report Excersice re_airquality
@@ -30,7 +30,7 @@ The built-in dataset *airquality* has daily air quality measurements from New Yo
 
 With the provided data, the effect of ozone production at near surface level is analysed. Ozone at near surface levels is created followingly:
 
--   NO~2~ + O~2~ \<=\> NO + O~3~
+$$NO_2 + O_2 <==> NO + O_3$$
 
 Both reactions take place simultaneously. To enrich the concentration, emitted volatile organic compounds (VOC) can bond with NO and thus limiting the backward reaction.
 
@@ -49,10 +49,10 @@ oz <- airquality %>% drop_na()
 #Aggregating over months
 #Mean values
 oz_mean <- oz %>% group_by(Month) %>% summarise(
-  Ozone = mean(Ozone),
-  Wind = mean(Wind),
-  Solar.R = mean(Solar.R),
-  Temp = mean(Temp)
+  Ozone = round(mean(Ozone), 1),
+  Wind = round(mean(Wind), 1),
+  Solar.R = round(mean(Solar.R), 1),
+  Temp = round(mean(Temp), 1)
 )
 
 #Minimum values
@@ -73,27 +73,34 @@ oz_max <- oz %>% group_by(Month) %>% summarise(
 
 #Variance
 oz_var <- oz %>% group_by(Month) %>% summarise(
-  Ozone = var(Ozone),
-  Wind = var(Wind),
-  Solar.R = var(Solar.R),
-  Temp = var(Temp)
+  Ozone = round(var(Ozone), 1),
+  Wind = round(var(Wind), 1),
+  Solar.R = round(var(Solar.R), 1),
+  Temp = round(var(Temp), 1)
 )
 
-#Creating a table
-#Combine mean, max and min tables into one table
-oz_stats <- bind_cols(oz_min,oz_mean,oz_max,oz_var)
+#Creating tables containing statistics of
+#Windspeed
+wind_stats <- data.frame(oz_min$Month, oz_min$Wind, oz_max$Wind, oz_mean$Wind, oz_var$Wind)
+colnames(wind_stats) <- c("Month", "Minimum", "Maximum", "Mean", "Variance")
 
-#Renaming column names appropriately
-colnames(oz_stats) <- c("Month","Ozone_min","Wind_min","Solar_R_min","Temp_min",
-                        "Month1","Ozone_mean","Wind_mean","Solar_R_mean","Temp_mean",
-                        "Month2","Ozone_max","Wind_max","Solar_R_max","Temp_max",
-                        "Month3","Ozone_var","Wind_var","Solar_R_var","Temp_var")
+#Ozone
+ozone_stats <- data.frame(oz_min$Month, oz_min$Ozone, oz_max$Ozone, oz_mean$Ozone, oz_var$Ozone)
+colnames(ozone_stats) <- c("Month", "Minimum", "Maximum", "Mean", "Variance")
 
-#Reduce table such that column month only appears once
-oz_stats <- select(oz_stats,-contains(c("1","2","3")))
+#Solar radiation
+solar_stats <- data.frame(oz_min$Month, oz_min$Solar.R, oz_max$Solar.R, oz_mean$Solar.R, oz_var$Solar.R)
+colnames(solar_stats) <- c("Month", "Minimum", "Maximum", "Mean", "Variance")
+
+#Temperature
+temp_stats <- data.frame(oz_min$Month, oz_min$Temp, oz_max$Temp, oz_mean$Temp, oz_var$Temp)
+colnames(temp_stats) <- c("Month", "Minimum", "Maximum", "Mean", "Variance")
 
 #Create table
-knitr::kable(oz_stats)
+knitr::kable(wind_stats, caption = "Windspeed statistics")
+knitr::kable(ozone_stats, caption = "Ozone statistics")
+knitr::kable(temp_stats, caption = "Temperature statistics")
+knitr::kable(solar_stats, caption = "Solar radiation statistics")
 ```
 
 Now four plots containing the range and mean value of the observed variables are created.
@@ -258,4 +265,3 @@ According to this new plot, we can now see that especially low wind speeds accou
 ## Conclusion
 
 According to the analysis done above, my hypothesis is correct regarding higher solar radiation leading to higher ozone concentrations. In contrast to my hypothesis, lower wind speed seams to produce more ozone, which may root from reaction velocity. For higher wind speeds, the reaction of VOC’s with NO may be too low to limit the NO concentration and therefore limiting the enrichment of ozone.
-
