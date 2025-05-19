@@ -1,6 +1,6 @@
 ---
 title: "re_ml02"
-author: "Flueckiger_Rubens"
+author: "Flueckiger_Rubens; 21-118-385"
 date: "2025-05-05"
 output: 
   html_document:
@@ -28,6 +28,7 @@ laegern <- read.table("../data/FLX_CH-Lae.csv", sep = ",", header = T)
 ### Load function
 
 The function optimal_k_eval takes a training set and a test set as input. With the training set the function creates a KNN-model, searches for a ideal k-value and models the GPP value with this ideal k value. Afterwards the $R^2$ value and the RMSE value are calculated with the test set and returned. Returned values: 
+
 - First value: RMSE
 - Second value: $R^2$
 
@@ -37,7 +38,17 @@ source("../functions/optimal_k_eval.R")
 
 ## Preprocess Datasets
 
-In this step every error value gets dropped and following variables are selected: - TIMESTAMP - GPP_NT_VUT_REF - TA_F - SW_IN_F - LW_IN_F - VPD_F - PA_F - P_F - WS_F
+In this step every error value gets dropped and following variables are selected:
+
+- TIMESTAMP
+- GPP_NT_VUT_REF
+- TA_F
+- SW_IN_F
+- LW_IN_F
+- VPD_F
+- PA_F
+- P_F
+- WS_F
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -164,7 +175,7 @@ In general one can see that a model trained on one site has a better performance
 
 Quite poor. Especially for a set trained in Davos and tested in Laegern. The difference for a set trained in Laegern and tested in Davos is less dramatic.
 
-In general the differences occur due to height differences (Davos is about 1'000m higher than Laegern) and climatic differences. As Davos is according to the table above in a Polar-Tundra zone (ET) and Laegern is in a Temperate-No_dry_season-Warm_summer zone (Cfb) difference have to occur. In addition, the duration of the sampling for Davos is longer than the sampling duration in Laegern. There might occur some kind of an anomaly during the period when Davos was sampling and Laegern was not, which can have an affect on the performance of the models.
+In general the differences occur due to height differences (Davos is about 1'000m higher than Laegern) and climatic differences. As Davos is according to the table above in a *Polar Tundra* zone (ET) and Laegern is in a *Temperate, No dry season, Warm summer* zone (Cfb) difference have to occur. In addition, the duration of the sampling for Davos is longer than the sampling duration in Laegern. There might occur some kind of an anomaly during the period when Davos was sampling and Laegern was not, which can have an affect on the performance of the models.
 
 I think that the difference, especially in the contrast between Davos tested in Laegern and Laegern tested in Davos, has to do with the foliage type observed at both sites. As Davos has predominantly evergreen needle leaf trees, the model is trained with a specialization on needle leaf trees only. Therefore, the model performs poorer for a site with mixed forest conditions. A site with mixed forest conditions however contains to some extent needle leaf trees and therefore can still perform quite alright in a forest with only one type of tree.
 
