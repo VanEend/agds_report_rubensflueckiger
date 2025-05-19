@@ -68,12 +68,13 @@ In a third step a plot with the current (i-th) column and the GPP variable gets 
 
 After the loop the AIC of the highest performing variable gets created.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 1-14: Results by applying Step 1", fig.align='center'}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #Defining variables
 validation <- 0 #Reference value for R^2 value 
 col_names <- names(data) #Names of all columns
 col <- c() #Creating vector to store column index
 i <- 1
+all_plots <- c() #Vector to store plots
 
 
 #Loop over all columns of the dataset
@@ -95,8 +96,11 @@ for(i in 1:length(col_names)){
     }
     
     
-    #Plot
-    print(ggplot(data = data, aes(x = data[,i])) + #Points
+    #Storing plots in variable
+    all_plots[[i]] <- local({
+      i <- i 
+      
+      ggplot(data = data, aes(x = data[,i])) + #Points
       geom_point(aes(y = GPP_NT_VUT_REF), alpha = 0.2) + #Characteristics of the points
       geom_smooth(formula = y ~ x, method = "lm", color = "red", fullrange = T,
         aes(x = data[, i], y = GPP_NT_VUT_REF #Regression line + characteristics
@@ -106,7 +110,9 @@ for(i in 1:length(col_names)){
       ggtitle(paste0("GGP_NT_VUT vs. ",col_names[i])) + #Title
       theme_classic() +
       theme(plot.title = element_text(hjust = 0.5)) #Center title
-      )
+      
+    })
+    
   }
 }
 
@@ -115,6 +121,25 @@ sse <- sum((data[, col] - mean(data[, col]))^2)
 n <- length(data[,1])
 
 aic_val <- n * log(sse/n) + 6
+```
+
+```{r, echo=FALSE, fig.cap="Figure 1: Results by applying Step 1", fig.align='center'}
+cowplot::plot_grid(all_plots[[1]], all_plots[[2]],
+                   all_plots[[3]], all_plots[[4]])
+```
+
+```{r, echo=FALSE, fig.cap="Figure 2: Results by applying Step 1", fig.align='center'}
+cowplot::plot_grid(all_plots[[5]], all_plots[[6]],
+                   all_plots[[7]], all_plots[[8]])
+```
+
+```{r, echo=FALSE, fig.cap="Figure 3: Results by applying Step 1", fig.align='center'}
+cowplot::plot_grid(all_plots[[9]], all_plots[[10]],
+                   all_plots[[11]], all_plots[[12]])
+```
+
+```{r, echo=FALSE, fig.cap="Figure 4: Results by applying Step 1", fig.align='center'}
+cowplot::plot_grid(all_plots[[13]], all_plots[[15]])
 ```
 
 As a first approximation, the GPP (the rate at which solar energy is captured in sugar molecules during photosynthetic process) is only dependent on the photon flux density (*PPFD_IN*) inside the leaf. This should be obvious for a non-radiation energy limited system since for such a system the production rate is limited by the production rate of the plant itself which in return is limited by the formation rate of sugar which is dependent on the photon flux. Therefore, as a first approximation, wind speed, air temperature, vapor density and atmospheric pressure can be neglected.
@@ -204,7 +229,7 @@ print(col_names[col])
 
 To visualize and verify the result, a regression model and a principal component analysis (PCA) is performed.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 15: GPP as a function of the most relevant parameter", fig.align='center'}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 5: GPP as a function of the most relevant parameter", fig.align='center'}
 
 #Regression model of the relevant variables
 r_value <- round(validation, 5) #R^2 value rounded to 5 decimals
@@ -220,7 +245,7 @@ ggplot(data = data, aes(x = PPFD_IN, y = GPP_NT_VUT_REF)) + #Points
   theme(plot.title = element_text(hjust = 0.5)) #Center Title
 ```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 16: Principal component analysis", fig.align='center'}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 6: Principal component analysis", fig.align='center'}
 
 #Principal component analysis (PCA)
 fit <- princomp(data, cor = T)
