@@ -9,34 +9,30 @@ output:
 
 # Report re_ml02
 
-## Load packages and dataset
+## 1 Load packages, datasets and function
 
 ```{r, warning=FALSE, message=FALSE}
+#Packages
 library(dplyr)
 library(ggplot2)
 library(readr)
 library(tidyr)
 library(caret)
 library(recipes)
-```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+#Datasets
 davos <- read.table("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv", sep = ",", header = T)
 laegern <- read.table("../data/FLX_CH-Lae.csv", sep = ",", header = T)
+
+#Function
+source("../functions/optimal_k_eval.R")
 ```
-
-### Load function
-
-The function optimal_k_eval takes a training set and a test set as input. With the training set the function creates a KNN-model, searches for a ideal k-value and models the GPP value with this ideal k value. Afterwards the $R^2$ value and the RMSE value are calculated with the test set and returned. Returned values: 
+To reduce code length, the function *optimal_k_eval* is loaded into this file. The function takes a training set and a test set as input. With the training set the function creates a KNN-model, searches for a ideal k-value and models the GPP value with this ideal k value. Afterwards the $R^2$ value and the RMSE value are calculated with the test set and returned. Returned values: 
 
 - First value: RMSE
 - Second value: $R^2$
 
-```{r, echo=FALSE}
-source("../functions/optimal_k_eval.R")
-```
-
-## Preprocess Datasets
+## 2 Preprocess Datasets
 
 In this step every error value gets dropped and following variables are selected:
 
@@ -92,13 +88,13 @@ laegern <- laegern %>% # select only the variables we are interested in
 
 Then, a data set *total* containing data from Davos and Laegern is created
 
-```{r, echo=FALSE}
+```{r}
 total <- bind_rows(davos, laegern)
 ```
 
 Afterwards all datasets are splited into training and test data
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE}
 #Davos
 set.seed(1982)  # for reproducibility
 split <- rsample::initial_split(davos, prop = 0.8, strata = "VPD_F")
@@ -118,9 +114,9 @@ total_train <- rsample::training(split)
 total_test <- rsample::testing(split)
 ```
 
-## Modelling and evaluating
+## 3 Modelling and evaluating
 
-### Site Information
+### 3.1 Site Information
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 site_info <- load("../data/siteinfo_fluxnet2015.rda")
@@ -128,7 +124,7 @@ siteinfo_fluxnet2015 %>%
   filter(sitename %in% c("CH-Dav", "CH-Lae"))
 ```
 
-### Evaluation
+### 3.2 Evaluation
 
 ```{r, echo=FALSE}
 #With Davos
@@ -165,7 +161,7 @@ tot_v_tot <- optimal_k_eval(df_train = total_train, df_test = total_test)
 | Evaluation against Laegern test set         | `r round(tot_v_lae[2], 3)` | `r round(tot_v_lae[1], 3)` |
 | Evaluation against Davos & Laegern test set | `r round(tot_v_tot[2], 3)` | `r round(tot_v_tot[1], 3)` |
 
-## Interpretation
+## 4 Interpretation
 
 **What are the patterns that you see in the tables?**
 
