@@ -360,21 +360,24 @@ display: none;
 <ul>
 <li><a href="#report-excersice-re_tidy" id="toc-report-excersice-re_tidy">Report Excersice re_tidy</a>
 <ul>
-<li><a href="#loading-packages-and-dataset" id="toc-loading-packages-and-dataset">Loading packages and
+<li><a href="#loading-packages-and-dataset" id="toc-loading-packages-and-dataset">1 Loading packages and
 Dataset</a></li>
-<li><a href="#dataset" id="toc-dataset">Dataset</a>
+<li><a href="#dataset" id="toc-dataset">2 Dataset</a>
 <ul>
-<li><a href="#information" id="toc-information">Information</a></li>
-<li><a href="#pre-cleaning-excel-spread-sheet" id="toc-pre-cleaning-excel-spread-sheet">Pre-cleaning Excel
+<li><a href="#information" id="toc-information">2.1 Information</a></li>
+<li><a href="#pre-cleaning-excel-spread-sheet" id="toc-pre-cleaning-excel-spread-sheet">2.2 Pre-cleaning Excel
 spread-sheet</a></li>
-<li><a href="#select-necessary-data" id="toc-select-necessary-data">Select necessary data</a></li>
+<li><a href="#select-necessary-data" id="toc-select-necessary-data">2.3
+Select necessary data</a></li>
 </ul></li>
-<li><a href="#analysis" id="toc-analysis">Analysis</a>
+<li><a href="#analysis" id="toc-analysis">3 Analysis</a>
 <ul>
-<li><a href="#log-response-ratio" id="toc-log-response-ratio">Log-response-ratio</a></li>
-<li><a href="#aggregating" id="toc-aggregating">Aggregating</a></li>
+<li><a href="#log-response-ratio" id="toc-log-response-ratio">3.1
+Log-response-ratio</a></li>
+<li><a href="#aggregating" id="toc-aggregating">3.2 Aggregating</a></li>
 </ul></li>
-<li><a href="#interpretation" id="toc-interpretation">Interpretation</a></li>
+<li><a href="#interpretation" id="toc-interpretation">4
+Interpretation</a></li>
 </ul></li>
 </ul>
 </div>
@@ -382,24 +385,28 @@ spread-sheet</a></li>
 <div id="report-excersice-re_tidy" class="section level1">
 <h1>Report Excersice re_tidy</h1>
 <div id="loading-packages-and-dataset" class="section level2">
-<h2>Loading packages and Dataset</h2>
+<h2>1 Loading packages and Dataset</h2>
 <p>In this step necessary packages for this analysis are imported.</p>
 <p><em>Note:</em></p>
 <p>For my version of R the package <em>bit64</em> seams to be crucial.
 On another version of R, this might not be the case. However, since for
 this work the package was used, it is in the report.</p>
-<pre class="r"><code>library(dplyr)
+<pre class="r"><code>#Packages
+library(dplyr)
 library(lubridate)
 library(tidyr)
 library(readr)
 library(stringr)
 library(purrr)
-library(bit64)</code></pre>
+library(bit64)
+
+#Dataset
+soil_co2_dataset &lt;- read_csv2(&quot;../data/data_re_tidy.csv&quot;)</code></pre>
 </div>
 <div id="dataset" class="section level2">
-<h2>Dataset</h2>
+<h2>2 Dataset</h2>
 <div id="information" class="section level3">
-<h3>Information</h3>
+<h3>2.1 Information</h3>
 <p>The provided dataset consists of various soil sample sites (column
 Experiment). These soils were exposed to higher atmospheric
 CO<sub>2</sub> concentration (column increased_CO2_mean) to measure the
@@ -423,7 +430,7 @@ increase in Carbon storage in the soil and therefore a decrease in
 soil-CO<sub>2</sub> concentration compared to a reference soil.</p>
 </div>
 <div id="pre-cleaning-excel-spread-sheet" class="section level3">
-<h3>Pre-cleaning Excel spread-sheet</h3>
+<h3>2.2 Pre-cleaning Excel spread-sheet</h3>
 <p>To use properly use the provided data, following steps were preformed
 on the Excel-spreadsheet:</p>
 <ol style="list-style-type: decimal">
@@ -439,23 +446,25 @@ underscore (_)</li>
 this report.</p>
 </div>
 <div id="select-necessary-data" class="section level3">
-<h3>Select necessary data</h3>
+<h3>2.3 Select necessary data</h3>
 <p>To reduce the complexity of the aggregation, in this step only the
 necessary columns are selected. For this report the columns,
 <em>Time_years</em>, <em>ambient_CO2_mean</em> and
 <em>increased_CO2_mean</em> have to be used.</p>
+<pre class="r"><code>soil_co2 &lt;- select(soil_co2_dataset,&quot;Time_years&quot;,&quot;ambient_CO2_mean&quot;,&quot;increased_CO2_mean&quot;)</code></pre>
 </div>
 </div>
 <div id="analysis" class="section level2">
-<h2>Analysis</h2>
+<h2>3 Analysis</h2>
 <div id="log-response-ratio" class="section level3">
-<h3>Log-response-ratio</h3>
+<h3>3.1 Log-response-ratio</h3>
 <p>With the help of the mutate() function a new column in the new
 dataset is created. The new column contains the log_response_ratio,
 which can be calculated with the formula given.</p>
+<pre class="r"><code>soil_co2 &lt;- mutate(soil_co2, log_response_ratio = log(soil_co2$increased_CO2_mean/soil_co2$ambient_CO2_mean))</code></pre>
 </div>
 <div id="aggregating" class="section level3">
-<h3>Aggregating</h3>
+<h3>3.2 Aggregating</h3>
 <p>In this step the dataset is aggregated into three phases:</p>
 <ol style="list-style-type: decimal">
 <li>Early phase, with Time_years lower than 3 years</li>
@@ -497,7 +506,7 @@ containing the phases accordingly.</p>
 </div>
 </div>
 <div id="interpretation" class="section level2">
-<h2>Interpretation</h2>
+<h2>4 Interpretation</h2>
 <p>To check whether my initial hypothesis was correct or not, one has to
 understand the meaning of the log-response ratio.</p>
 <p>First we take a closer look to the fraction inside the logarithm. If
