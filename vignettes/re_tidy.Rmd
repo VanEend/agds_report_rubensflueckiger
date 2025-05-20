@@ -9,7 +9,7 @@ output:
 
 # Report Excersice re_tidy
 
-## Loading packages and Dataset
+## 1 Loading packages and Dataset
 
 In this step necessary packages for this analysis are imported.
 
@@ -18,6 +18,7 @@ In this step necessary packages for this analysis are imported.
 For my version of R the package *bit64* seams to be crucial. On another version of R, this might not be the case. However, since for this work the package was used, it is in the report.
 
 ```{r, warning=FALSE, message=FALSE}
+#Packages
 library(dplyr)
 library(lubridate)
 library(tidyr)
@@ -25,20 +26,19 @@ library(readr)
 library(stringr)
 library(purrr)
 library(bit64)
-```
-```{r, echo=FALSE, message=FALSE}
+
+#Dataset
 soil_co2_dataset <- read_csv2("../data/data_re_tidy.csv")
 ```
+## 2 Dataset
 
-## Dataset
-
-### Information
+### 2.1 Information
 
 The provided dataset consists of various soil sample sites (column Experiment). These soils were exposed to higher atmospheric CO~2~ concentration (column increased_CO2_mean) to measure the effect of carbon dioxide storage into the soil for higher CO~2~ concentration in the air. To account for the time-effect, different sample sites have a different length of soil exposure (column time_years). To compare the result, a reference soil CO~2~ concentration was analysed (column ambient_CO2_mean).
 
 According to the paper, increasing the atmospheric CO~2~ concentration leads to a stimulated plant growth, which in return leads to an increased soil carbon input. Important to note here is that CO~2~ gets converted into glucose during photosynthesis processes. During the lifespan of the plant and when the plant dies, some of the stored Carbon in the glucose gets injected back to the atmosphere due to respiration of the plant and microorganisms during the decomposition processes. But since not all Carbon gets re-injected to the atmosphere, a net positive C-storage gain in the soil. Since the plant growth gets enhanced with increased atmospheric CO~2~, I hypothesise that an increase in atmospheric CO~2~ leads to an increase in Carbon storage in the soil and therefore a decrease in soil-CO~2~ concentration compared to a reference soil.
 
-### Pre-cleaning Excel spread-sheet
+### 2.2 Pre-cleaning Excel spread-sheet
 
 To use properly use the provided data, following steps were preformed on the Excel-spreadsheet:
 
@@ -50,25 +50,25 @@ To use properly use the provided data, following steps were preformed on the Exc
 
 Then the dataset was converted into a CSV-format and put into the *data* directory. This version of the dataset will be used in this report.
 
-### Select necessary data
+### 2.3 Select necessary data
 
 To reduce the complexity of the aggregation, in this step only the necessary columns are selected. For this report the columns, *Time_years*, *ambient_CO2_mean* and *increased_CO2_mean* have to be used.
 
-```{r, echo=FALSE}
+```{r}
 soil_co2 <- select(soil_co2_dataset,"Time_years","ambient_CO2_mean","increased_CO2_mean")
 ```
 
-## Analysis
+## 3 Analysis
 
-### Log-response-ratio
+### 3.1 Log-response-ratio
 
 With the help of the mutate() function a new column in the new dataset is created. The new column contains the log_response_ratio, which can be calculated with the formula given.
 
-```{r, echo=FALSE}
+```{r}
 soil_co2 <- mutate(soil_co2, log_response_ratio = log(soil_co2$increased_CO2_mean/soil_co2$ambient_CO2_mean))
 ```
 
-### Aggregating
+### 3.2 Aggregating
 
 In this step the dataset is aggregated into three phases:
 
@@ -93,7 +93,7 @@ soil_co2_aggregated <- soil_co2 %>% group_by(Phase) %>% #Group by the newly crea
 knitr::kable(soil_co2_aggregated)
 ```
 
-## Interpretation
+## 4 Interpretation
 
 To check whether my initial hypothesis was correct or not, one has to understand the meaning of the log-response ratio.
 
