@@ -360,36 +360,42 @@ display: none;
 <ul>
 <li><a href="#report-re_ml02" id="toc-report-re_ml02">Report re_ml02</a>
 <ul>
-<li><a href="#load-packages-and-dataset" id="toc-load-packages-and-dataset">Load packages and dataset</a>
+<li><a href="#load-packages-datasets-and-function" id="toc-load-packages-datasets-and-function">1 Load packages, datasets
+and function</a></li>
+<li><a href="#preprocess-datasets" id="toc-preprocess-datasets">2
+Preprocess Datasets</a></li>
+<li><a href="#modelling-and-evaluating" id="toc-modelling-and-evaluating">3 Modelling and evaluating</a>
 <ul>
-<li><a href="#load-function" id="toc-load-function">Load
-function</a></li>
-</ul></li>
-<li><a href="#preprocess-datasets" id="toc-preprocess-datasets">Preprocess Datasets</a></li>
-<li><a href="#modelling-and-evaluating" id="toc-modelling-and-evaluating">Modelling and evaluating</a>
-<ul>
-<li><a href="#site-information" id="toc-site-information">Site
+<li><a href="#site-information" id="toc-site-information">3.1 Site
 Information</a></li>
-<li><a href="#evaluation" id="toc-evaluation">Evaluation</a></li>
+<li><a href="#evaluation" id="toc-evaluation">3.2 Evaluation</a></li>
 </ul></li>
-<li><a href="#interpretation" id="toc-interpretation">Interpretation</a></li>
+<li><a href="#interpretation" id="toc-interpretation">4
+Interpretation</a></li>
 </ul></li>
 </ul>
 </div>
 
 <div id="report-re_ml02" class="section level1">
 <h1>Report re_ml02</h1>
-<div id="load-packages-and-dataset" class="section level2">
-<h2>Load packages and dataset</h2>
-<pre class="r"><code>library(dplyr)
+<div id="load-packages-datasets-and-function" class="section level2">
+<h2>1 Load packages, datasets and function</h2>
+<pre class="r"><code>#Packages
+library(dplyr)
 library(ggplot2)
 library(readr)
 library(tidyr)
 library(caret)
-library(recipes)</code></pre>
-<div id="load-function" class="section level3">
-<h3>Load function</h3>
-<p>The function optimal_k_eval takes a training set and a test set as
+library(recipes)
+
+#Datasets
+davos &lt;- read.table(&quot;../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv&quot;, sep = &quot;,&quot;, header = T)
+laegern &lt;- read.table(&quot;../data/FLX_CH-Lae.csv&quot;, sep = &quot;,&quot;, header = T)
+
+#Function
+source(&quot;../functions/optimal_k_eval.R&quot;)</code></pre>
+<p>To reduce code length, the function <em>optimal_k_eval</em> is loaded
+into this file. The function takes a training set and a test set as
 input. With the training set the function creates a KNN-model, searches
 for a ideal k-value and models the GPP value with this ideal k value.
 Afterwards the <span class="math inline">\(R^2\)</span> value and the
@@ -400,9 +406,8 @@ values:</p>
 <li>Second value: <span class="math inline">\(R^2\)</span></li>
 </ul>
 </div>
-</div>
 <div id="preprocess-datasets" class="section level2">
-<h2>Preprocess Datasets</h2>
+<h2>2 Preprocess Datasets</h2>
 <p>In this step every error value gets dropped and following variables
 are selected:</p>
 <ul>
@@ -418,12 +423,30 @@ are selected:</p>
 </ul>
 <p>Then, a data set <em>total</em> containing data from Davos and
 Laegern is created</p>
+<pre class="r"><code>total &lt;- bind_rows(davos, laegern)</code></pre>
 <p>Afterwards all datasets are splited into training and test data</p>
+<pre class="r"><code>#Davos
+set.seed(1982)  # for reproducibility
+split &lt;- rsample::initial_split(davos, prop = 0.8, strata = &quot;VPD_F&quot;)
+davos_train &lt;- rsample::training(split)
+davos_test &lt;- rsample::testing(split)
+
+#Laegern
+set.seed(1982)  # for reproducibility
+split &lt;- rsample::initial_split(laegern, prop = 0.8, strata = &quot;VPD_F&quot;)
+laegern_train &lt;- rsample::training(split)
+laegern_test &lt;- rsample::testing(split)
+
+#Davos &amp; Laegern
+set.seed(1982)  # for reproducibility
+split &lt;- rsample::initial_split(total, prop = 0.8, strata = &quot;VPD_F&quot;)
+total_train &lt;- rsample::training(split)
+total_test &lt;- rsample::testing(split)</code></pre>
 </div>
 <div id="modelling-and-evaluating" class="section level2">
-<h2>Modelling and evaluating</h2>
+<h2>3 Modelling and evaluating</h2>
 <div id="site-information" class="section level3">
-<h3>Site Information</h3>
+<h3>3.1 Site Information</h3>
 <pre><code>## # A tibble: 2 × 12
 ##   sitename   lon   lat   elv year_start year_end classid c4      whc
 ##   &lt;chr&gt;    &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;    &lt;chr&gt;   &lt;lgl&gt; &lt;dbl&gt;
@@ -433,7 +456,7 @@ Laegern is created</p>
 ## #   plant_functional_type &lt;chr&gt;</code></pre>
 </div>
 <div id="evaluation" class="section level3">
-<h3>Evaluation</h3>
+<h3>3.2 Evaluation</h3>
 <table>
 <colgroup>
 <col width="58%" />
@@ -530,7 +553,7 @@ Laegern is created</p>
 </div>
 </div>
 <div id="interpretation" class="section level2">
-<h2>Interpretation</h2>
+<h2>4 Interpretation</h2>
 <p><strong>What are the patterns that you see in the
 tables?</strong></p>
 <p>In general one can see that a model trained on one site has a better
@@ -583,10 +606,10 @@ the training and testing set does not reach the required size given in
 the task.</p>
 <p>I assume the model will perform poor for a site in Spain. Both Davos
 and Laegern show a more similar climatic condition (Temperate
-vs. Tundra) whereas a site in Spain would show a more dry condition.
-Therefore, the implementation of the model on a site in Spain would fail
-as the model was not trained with foliage growing especially these
-region.</p>
+vs. Tundra) whereas a site in Spain would show a more dry and hot
+condition. Therefore, the implementation of the model on a site in Spain
+would fail as the model was not trained with foliage growing especially
+in these region.</p>
 </div>
 </div>
 
