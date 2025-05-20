@@ -9,7 +9,7 @@ output:
 
 # Report Excersice re_airquality
 
-## Load packages
+## 1 Load packages
 
 ```{r, message=FALSE, error=FALSE, warning=FALSE}
 library(tidyr)
@@ -19,7 +19,7 @@ library(lubridate)
 library(dplyr)
 ```
 
-## Dataset Information
+## 2 Dataset Information
 
 The built-in dataset *airquality* has daily air quality measurements from New York between 1.5.1973 and 30.8.1973. The dataset contains:
 
@@ -36,9 +36,9 @@ Both reactions take place simultaneously. To enrich the concentration, emitted v
 
 I hypothesize that a higher wind speed, which should enhance mixing, and solar radiation leads to a higher ozone concentration.
 
-## Analysis
+## 3 Analysis
 
-### Monthly fluxes
+### 3.1 Monthly fluxes
 
 First monthly fluxes are analysed by aggregating daily values over the month.
 
@@ -213,9 +213,9 @@ cowplot::plot_grid(v1,v2,v3,v4)
 
 One can see that the distributions for low wind speed and ozone, as well as solar radiation and temperature are very similar, which can be explained as solar radiation is the source of temperature.
 
-### Scatterplot
+### 3.2 Scatterplot
 
-**Ozone vs. solar radiation and wind speed**
+**Ozone vs. solar radiation**
 
 Since wind speed seems to have a strong effect for low velocities, we first plot solar radiation against ozone concentration. Then a trend line including the regression coefficient is calculated.
 
@@ -243,7 +243,11 @@ ggplot(data = oz,aes(x = Solar.R, y = Ozone)) + geom_point(shape = 20, size = 3)
   theme(plot.title = element_text(hjust = 0.5)) #Center title
 ```
 
-One can see that the regression coefficient has a low value of 0.113 which means that solar radiation only explains about 10% of the ozone concentration effect. By plotting the wind speed in colours, we can account for this effect as well.
+One can see that the regression coefficient has a low value of 0.113 which means that solar radiation only explains about 10% of the ozone concentration effect. 
+
+**Ozone vs. solar radiation and wind speed**
+
+By plotting the wind speed in colours, we can account for this effect as well.
 
 ```{r, echo=FALSE, message=FALSE, fig.cap="Figure 4: Ozone as a function of solar radiation and windspeed", fig.align='center'}
 #Plot regression & wind
@@ -262,6 +266,6 @@ ggplot(data = oz,aes(x = Solar.R, y = Ozone, colour = Wind)) +
 
 According to this new plot, we can now see that especially low wind speeds account for especially high ozone concentration.
 
-## Conclusion
+## 4 Conclusion
 
 According to the analysis done above, my hypothesis is correct regarding higher solar radiation leading to higher ozone concentrations. In contrast to my hypothesis, lower wind speed seams to produce more ozone, which may root from reaction velocity. For higher wind speeds, the reaction of VOC’s with NO may be too low to limit the NO concentration and therefore limiting the enrichment of ozone.
