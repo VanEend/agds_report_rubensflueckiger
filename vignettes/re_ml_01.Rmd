@@ -9,18 +9,25 @@ output:
 
 # Report exercise maschine learning I
 
-## Load packeges, dataset and function
+## 1 Load packeges, dataset and function
 
 ```{r, message=FALSE, warning=FALSE}
+#Packages
 library(dplyr)
 library(caret)
 library(ggplot2)
 library(tidyr)
+
+#Dataset
+daily_fluxes <- readr::read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv")
+
+#Function
+source("../functions/Model_eval_function.R")
 ```
 
 ```{r, echo=FALSE, message=FALSE}
 #Dataset
-daily_fluxes <- readr::read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv") %>%
+daily_fluxes <- daily_fluxes %>%
 
   # select only the variables we are interested in
   dplyr::select(TIMESTAMP,
@@ -51,12 +58,9 @@ daily_fluxes <- readr::read_csv("../data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-
   dplyr::select(-ends_with("_QC"))
 ```
 
-```{r, echo=FALSE}
-#Function
-source("../functions/Model_eval_function.R")
-```
+## 2 Preprocessing
 
-## Preprocessing
+This step involves splitting the dataset into a training and test set as well as training the KNN- and linear model with the training set created.
 
 ```{r, echo=FALSE, warning=FALSE}
 
@@ -94,21 +98,25 @@ mod_knn <- caret::train(
 
 ```
 
-## Comparison of the linear regression and KNN models
+## 3 Comparison of the linear regression and KNN models
 
-### Linear regression
+### 3.1 Linear regression
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 1: Linear model evaluation", fig.align='center'}
+Applying the function *eval_model* to analyse the linear model.
+
+```{r, warning=FALSE, message=FALSE, fig.cap="Figure 1: Linear model evaluation", fig.align='center'}
 eval_model(mod = mod_lm, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
 ```
 
-### KNN model evaluation
+### 3.2 KNN model evaluation
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Figure 2: KNN model evaluation", fig.align='center'}
+Applying the function *eval_model* to analyse the KNN-model.
+
+```{r, warning=FALSE, message=FALSE, fig.cap="Figure 2: KNN model evaluation", fig.align='center'}
 eval_model(mod = mod_knn, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
 ```
 
-### Interpretation
+### 3.3 Interpretation
 
 **Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model?**
 
@@ -122,7 +130,7 @@ Since in the KNN model we only consider a point cloud with the minimal distance 
 
 Since in the KNN model only the nearest points are considered, it tends to underfit the problem. On the other hand a linear regression model tends to overfit the problem (if the "actual" model is linear) since a model over every data point inside the dataset is considered to model a variable.
 
-### Temporal variations
+### 3.4 Temporal variations
 
 ```{r, echo=FALSE, fig.cap="Figure 3: Temporal changes", fig.align='center'}
 
@@ -147,15 +155,19 @@ ggplot(data = daily_fluxes_plot, aes(x = TIMESTAMP)) + #X-Axis (Timeline)
 
 One can see that the linear model and the KNN model predict GPP about the same way. Both methods tend to predict high GPP value badly and the linear model tends to overpredict negative GPP-values.
 
-## The role of k
+## 4 The role of k
 
 If the k value approaches 1, only one datapoint is considered. This means that the model is less confined. The model has a low complexity but a large error, which leads to an underfitment. In contrast, if the k value approaches n, every datapoint is considered. This means that the model is very confined. The model has a high complexity as well as a high error, which leads to an overfitment.
 
-### Testing the hypothesis
+### 4.1 Testing the hypothesis
 
-The function general_test takes a trainingset, a testset and a k value for the KNN-regression as an input and outputs the MAE value of its created test set. Since a training and a testset was already formed in a previous step of this markdown, I will reuse those sets
+To reduce code length, I first create a function (*general_test*) which will be applied inside a loop.
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+#### 4.1.1 Function
+
+The function general_test takes a trainingset, a testset and a k value for the KNN-regression as an input and outputs the MAE value of its created test set. Since a training and a testset was already formed in a previous step of this markdown, I will reuse those sets. The output will be the mean average error (MAE) for the specific k-value given in the input.
+
+```{r, warning=FALSE, message=FALSE}
 
 general_test <- function(k_value, df_train, df_test){
   
@@ -184,23 +196,39 @@ general_test <- function(k_value, df_train, df_test){
 
 ```
 
-### Ploted results
+#### 4.1.2 Plot
 
-*Note:* to reduce the runtime, only k values from 1 to 200 are considered. One will see that from a k value of about 100, the curve of the plot will converge to a linear curve. The minimum will be before this converge.
+In this step the function *general_test* is applied over all possible k-values. The k-values, as well as their MAE-values are stored separately inside a dataset, such that, in a further step, the optimal k-value can be determined.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 4: The role of k and MAE", fig.align='center'}
+*Note:* to reduce the runtime, only k values from 1 to 150 are considered. One will see that from a k value of about 100, the curve of the plot will converge to a linear curve. The minimum will be before this converge. Afterwards only a selected number of k-values are added
+
+```{r, message=FALSE, warning=FALSE}
 
 #Create data frame to store k & MAE values
 k <- c(1:200)
 k_vs_mae <- data.frame(k)
 
+#Apply KNN-model for each k-value
 for(i in 1:200){
-  
-  #Determine MAE of k = i and store it in data frame
+    #Determine MAE of k = i and store it in data frame
   k_vs_mae[i, "MAE"] <- general_test(k_value = i, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
-  
-}
+  }
+#K-values
+k_vs_mae[151:157, "k"] <- c(200, 250, 300, 350, 400, 450, 499)
 
+#Apply KNN-model for selected k-values
+k_vs_mae[151, "MAE"] <- general_test(k_value = 200, df_train = daily_fluxes_train, df_test = daily_fluxes_test) 
+k_vs_mae[152, "MAE"] <- general_test(k_value = 250, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+k_vs_mae[153, "MAE"] <- general_test(k_value = 300, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+k_vs_mae[154, "MAE"] <- general_test(k_value = 350, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+k_vs_mae[155, "MAE"] <- general_test(k_value = 400, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+k_vs_mae[156, "MAE"] <- general_test(k_value = 450, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+k_vs_mae[157, "MAE"] <- general_test(k_value = 499, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Figure 4: The role of k and MAE", fig.align='center'}
+
+#Visualization
 ggplot(data = k_vs_mae, aes(x = k, y = MAE)) +
   geom_point(size = 2) +
   labs(x = "Complexity (k)",
@@ -214,11 +242,11 @@ ggplot(data = k_vs_mae, aes(x = k, y = MAE)) +
 
 As one can see in the plot, a low k value, which means a low complexity, has a high error. The same is true for a high k value.
 
-### Optimal k
+### 4.2 Optimal k
 
 To find the optimal k one only has to extract the minimum MAE value of the dataset created above
 
-```{r, echo=FALSE}
+```{r}
 #Identifying the optimum
 ind <- match(min(k_vs_mae$MAE), k_vs_mae$MAE)
 
