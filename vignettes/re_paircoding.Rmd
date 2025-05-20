@@ -11,10 +11,10 @@ output:
 
 This file contains the link to the report exercise (as a back up)
 
-## My repository
+## 1 My repository
 
 link: https://github.com/VanEend/Colab_Github.git
 
-## My friends repository
+## 2 My friends repository
 
 link: https://github.com/LilSheesh7/colab_githuh_report.git
